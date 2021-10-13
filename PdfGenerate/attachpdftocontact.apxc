@@ -1,0 +1,49 @@
+public class attachpdftocontact {
+    
+    public Contact contact;
+    
+    public attachpdftocontact(ApexPages.StandardController controller) {
+        //contact = (Contact)controller.getRecord(); //instantiate the Account object for the current record
+        this.contact = [SELECT Id, Name, Account.Name, Department, Email FROM Contact WHERE Id=: ApexPages.currentPage().getParameters().get('id')];
+    }
+    
+    public PageReference attachPDF() {
+        
+        PageReference pdfPage = Page.PdfRenderer;
+        pdfPage.getParameters().put('id', contact.Id);
+        Blob pdfBlob;
+        if (!Test.isRunningTest()) { //if we are not in testing context
+            pdfBlob = pdfPage.getContent(); //generate the pdf blob
+        } else { //otherwise, we are in testing context and getContent() gets funky so create the blob manually
+            pdfBlob = Blob.valueOf('Some Text for a boring PDF file...');
+        }
+        Attachment attach = new Attachment(parentId = contact.Id, Name = 'attachmentPdf.pdf', body = pdfBlob); //create the attachment object
+        insert attach; //insert the attachment
+        
+        //Get attachment
+        
+        //Insert ContentVersion
+        ContentVersion cVersion = new ContentVersion();
+        cVersion.ContentLocation = 'S'; //S-Document is in Salesforce. E-Document is outside of Salesforce. L-Document is on a Social Netork.
+        cVersion.PathOnClient = attach.Name;//File name with extention
+        cVersion.Title = attach.Name;//Name of the file
+        cVersion.VersionData = attach.Body;//File content
+        Insert cVersion;
+        
+        //After saved the Content Verison, get the ContentDocumentId
+        Id conDocument = [SELECT ContentDocumentId FROM ContentVersion WHERE Id =:cVersion.Id].ContentDocumentId;
+        
+        //Insert ContentDocumentLink
+        ContentDocumentLink cDocLink = new ContentDocumentLink();
+        cDocLink.ContentDocumentId = conDocument;//Add ContentDocumentId
+        cDocLink.LinkedEntityId = attach.ParentId;//Add attachment parentId
+        cDocLink.ShareType = 'V';//V - Viewer permission. C - Collaborator permission. I - Inferred permission.
+        cDocLink.Visibility = 'AllUsers';//AllUsers, InternalUsers, SharedUsers
+        Insert cDocLink;
+        
+        //redirect the user
+        PageReference pageWhereWeWantToGo = new ApexPages.StandardController(contact).view(); //we want to redirect the User back to the Account detail page
+        pageWhereWeWantToGo.setRedirect(true); //indicate that the redirect should be performed on the client side
+        return pageWhereWeWantToGo; //send the User on their way
+    }
+}
