@@ -1,0 +1,5 @@
+<apex:page action="{!attachPDF}" extensions="attachpdftocontact" standardController="Contact">
+    
+    <apex:pageMessages ></apex:pageMessages><!-- included for display of errors should they occur -->
+    <apex:detail inlineEdit="true" relatedList="true"></apex:detail> <!-- included so Account detail information is visible when errors occur -->
+</apex:page>
