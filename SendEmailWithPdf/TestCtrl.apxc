@@ -1,0 +1,41 @@
+public with sharing class TestCtrl {
+
+    @AuraEnabled
+    public static List<ContentDocumentLink> getContents(Id conId) {
+
+        List<ContentDocumentLink> contentId = [Select ContentDocumentId FROM ContentDocumentLink where LinkedEntityID =: conId ORDER BY SystemModstamp DESC LIMIT 1];
+        //System.debug(contentId);
+        return contentId;
+    }
+
+    @AuraEnabled
+    public static void sendEmail(Id conId, list<String> emailAddress) {
+         ID contentId = [Select ContentDocumentId FROM ContentDocumentLink where LinkedEntityID =: conId ORDER BY SystemModstamp DESC LIMIT 1].ContentDocumentId;
+        List<ContentVersion> files = [SELECT Title, VersionData, FileType FROM ContentVersion WHERE ContentDocumentId =: contentId];
+        System.debug(files);
+
+        List<Messaging.EmailFileAttachment> attachments = new List<Messaging.EmailFileAttachment>();
+        for (ContentVersion file: files) {
+            Messaging.EmailFileAttachment efa = new Messaging.EmailFileAttachment();
+            efa.setFileName(file.Title);
+            efa.setBody(file.VersionData);
+            if(file.FileType == 'PDF'){
+                efa.setContentType('application/pdf');
+            }
+            attachments.add(efa);
+        }
+
+        
+        for(Integer i = 0; i<emailAddress.size(); i++){
+            System.debug(emailAddress[i]);
+            Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+        	mail.setUseSignature(false);
+        	mail.setToAddresses(new String[] { emailAddress[i] });
+        	mail.setSubject('PDF Email Demo');
+        	mail.setHtmlBody('Here is the email you requested! Check the attachment!');
+        mail.setFileAttachments(attachments);
+        Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
+        }
+		        
+    }
+}
