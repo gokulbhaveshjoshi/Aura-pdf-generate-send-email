@@ -4,7 +4,19 @@ public class attachpdftocontact {
     
     public attachpdftocontact(ApexPages.StandardController controller) {
         //contact = (Contact)controller.getRecord(); //instantiate the Account object for the current record
-        this.contact = [SELECT Id, Name, Account.Name, Department, Email FROM Contact WHERE Id=: ApexPages.currentPage().getParameters().get('id')];
+        this.contact = [SELECT Owner.Name, MobilePhone, salutation, Name, Phone, Account.Name, OtherPhone, HubLocation__c, Email, 
+                        Topics__c, Event_Source__c, Contact__c, Description, Questions__c, Error__c, Owns_a_House__c, 
+                        Stage_of_Divorce__c, Own_a_Business__c, Date_of_Separation__c, Has_Children__c, Choose_a_Divorce_Process__c,
+                        Number_of_Children__c, Divorce_Process__c, Children_s_Age__c, Last_Contacted__c, Gender__c, Last_Contacted_By__r.Name, 
+                        Age__c, Contact_Status__c, Length_of_Marriage__c, Next_Contact_Date__c, Working_with_Professionals__c, DoNotCall, 
+                        No_of_Professionals__c, Where_did_you_hear_about_Vesta__c, Referral_s_made__c, No_of_Concierge_Referral__c, 
+                        Professionals_Interested__c , Working_status_with_a_legal_profesional__c, How_are_your_kids_doing__c, 
+                        Name_of_Legal_Professional__c, Your_thought_about_the_attorney__c, Having_retirement_or_investment_accounts__c, 
+                        Who_manages_the_family_finances__c, Will_spouse_disclose_assets_and_income__c, Are_either_of_you_a_stay_at_home_parent__c, 
+                        Spoke_about_idea_of_divorce_with_Spouse__c, Relationship_with_your_former_spouse__c, Buying_or_selling_a_property_residence__c, 
+                        Going_through_expecting_career_change__c, Do_you_understand_your_financial_option__c, Would_professional_be_helpful__c, 
+                        Any_therapist_coach_group_for_support__c, Will_you_find_health_wellness_option__c, MailingAddress, OtherAddress, 
+                        CreatedById, LastModifiedById, Notes__c, MailingStreet, MailingCity, MailingState, MailingCountry, MailingPostalCode FROM Contact WHERE Id=: ApexPages.currentPage().getParameters().get('id')];
     }
     
     public PageReference attachPDF() {
@@ -17,17 +29,17 @@ public class attachpdftocontact {
         } else { //otherwise, we are in testing context and getContent() gets funky so create the blob manually
             pdfBlob = Blob.valueOf('Some Text for a boring PDF file...');
         }
-        Attachment attach = new Attachment(parentId = contact.Id, Name = 'attachmentPdf.pdf', body = pdfBlob); //create the attachment object
-        insert attach; //insert the attachment
+       // Attachment attach = new Attachment(parentId = contact.Id, Name = 'attachmentPdf.pdf', body = pdfBlob); //create the attachment object
+       // insert attach; //insert the attachment
         
         //Get attachment
         
         //Insert ContentVersion
         ContentVersion cVersion = new ContentVersion();
         cVersion.ContentLocation = 'S'; //S-Document is in Salesforce. E-Document is outside of Salesforce. L-Document is on a Social Netork.
-        cVersion.PathOnClient = attach.Name;//File name with extention
-        cVersion.Title = attach.Name;//Name of the file
-        cVersion.VersionData = attach.Body;//File content
+        cVersion.PathOnClient = contact.Name + '-details.pdf';//File name with extention
+        cVersion.Title = contact.Name  + '-details.pdf';//Name of the file
+        cVersion.VersionData = pdfBlob;//File content
         Insert cVersion;
         
         //After saved the Content Verison, get the ContentDocumentId
@@ -36,7 +48,7 @@ public class attachpdftocontact {
         //Insert ContentDocumentLink
         ContentDocumentLink cDocLink = new ContentDocumentLink();
         cDocLink.ContentDocumentId = conDocument;//Add ContentDocumentId
-        cDocLink.LinkedEntityId = attach.ParentId;//Add attachment parentId
+        cDocLink.LinkedEntityId = contact.id;//Add attachment parentId
         cDocLink.ShareType = 'V';//V - Viewer permission. C - Collaborator permission. I - Inferred permission.
         cDocLink.Visibility = 'AllUsers';//AllUsers, InternalUsers, SharedUsers
         Insert cDocLink;
